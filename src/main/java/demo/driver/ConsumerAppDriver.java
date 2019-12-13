@@ -38,6 +38,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 //import org.apache.kafka.clients.consumer.RecordKeyRange;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import scala.Int;
 
 public class ConsumerAppDriver {
 
@@ -69,13 +70,14 @@ public class ConsumerAppDriver {
 
     properties.put(ConsumerConfig.GROUP_ID_CONFIG, threadingModel + "-consumer-app");
     properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+    properties.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, Int.MaxValue());
     properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
     properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 
     final String inputTopic = properties.getProperty("input.topic", inputTopicName);
 
     KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(properties);
-    consumer.subscribe(Collections.singletonList(inputTopic));
+    consumer.assign(Collections.singletonList(new TopicPartition(inputTopic, 0)));
 
     if (threadingModel.equals("single-thread")) {
       System.out.println("Entering single thread mode");
@@ -89,7 +91,6 @@ public class ConsumerAppDriver {
   private static void enterSingleThreadMode(Consumer<byte[], byte[]> consumer,
                                             long pollDuration,
                                             long recordProcessingTime) {
-
     while (true) {
       final ConsumerRecords<byte[], byte[]> consumerRecords =
           consumer.poll(Duration.ofMillis(pollDuration));
@@ -101,7 +102,11 @@ public class ConsumerAppDriver {
           e.printStackTrace();
         }
       });
-      consumer.commitSync();
+
+      System.out.println("get consumer records " + consumerRecords.count());
+      if (consumerRecords.count() > 0) {
+        consumer.commitSync();
+      }
     }
   }
 //
