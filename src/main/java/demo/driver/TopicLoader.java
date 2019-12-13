@@ -17,7 +17,6 @@
 package demo.driver;
 
 import static net.sourceforge.argparse4j.impl.Arguments.store;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

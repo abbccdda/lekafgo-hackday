@@ -8,7 +8,7 @@ ext {
 }
 
 versions += [
-    kafka: "2.4.0-SNAPSHOT",
+    kafka: "lekafgo-1.0.0-SNAPSHOT",
     argparse4j: "0.7.0",
     slf4j: "1.7.25",
     log4j: "1.2.17"
