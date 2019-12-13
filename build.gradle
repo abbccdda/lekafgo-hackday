@@ -1,0 +1,53 @@
+plugins {
+    id 'java'
+    id 'distribution'
+}
+
+ext {
+    versions = [:]
+}
+
+versions += [
+    kafka: "2.4.0-SNAPSHOT",
+    argparse4j: "0.7.0",
+    slf4j: "1.7.25",
+    log4j: "1.2.17"
+]
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    compile "org.apache.kafka:kafka-clients:${versions.kafka}"
+    compile "org.apache.kafka:kafka-streams:${versions.kafka}"
+    compile "org.apache.kafka:kafka-tools:${versions.kafka}"
+    compile "org.apache.kafka:kafka_2.11:${versions.kafka}"
+    compile "net.sourceforge.argparse4j:argparse4j:${versions.argparse4j}"
+    compile "org.slf4j:slf4j-api:${versions.slf4j}"
+    runtime "org.slf4j:slf4j-log4j12:${versions.slf4j}"
+    runtime "log4j:log4j:${versions.log4j}"
+}
+
+distributions {
+    libs {
+        contents {
+            from { jar }
+            from configurations.runtime
+        }
+    }
+    
+    main {
+        contents {
+            from libsDistTar
+        }
+    }
+}
+
+distTar.compression = Compression.GZIP
+distTar.extension = 'tar.gz'
+
+libsDistTar.compression = Compression.GZIP
+libsDistTar.extension = 'tar.gz'
