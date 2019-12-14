@@ -35,7 +35,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.clients.consumer.RecordKeyRange;
+//import org.apache.kafka.clients.consumer.RecordKeyRange;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
@@ -82,7 +82,7 @@ public class ConsumerAppDriver {
       enterSingleThreadMode(consumer, pollDuration, recordProcessingTime);
     } else {
       System.out.println("Entering multi thread mode");
-      enterMultiThreadMode(consumer, pollDuration, recordProcessingTime, numThreads);
+      //enterMultiThreadMode(consumer, pollDuration, recordProcessingTime, numThreads);
     }
   }
 
@@ -101,10 +101,11 @@ public class ConsumerAppDriver {
           e.printStackTrace();
         }
       });
-      consumer.commitSync();
+      //Comment out commit as blocked by kafka changes
+      //consumer.commitSync();
     }
   }
-
+/*
   private static void enterMultiThreadMode(Consumer<byte[], byte[]> consumer,
                                            long pollDuration,
                                            long recordProcessingTime,
@@ -140,7 +141,7 @@ public class ConsumerAppDriver {
     }
     executorService.shutdown();
   }
-
+*/
   private static String getRequiredProperty(final String propName, final Properties props) {
     String value = props.getProperty(propName);
     if (value != null) {
@@ -162,7 +163,7 @@ public class ConsumerAppDriver {
     }
     return filteredProps;
   }
-
+/*
   enum WorkerState {
     RUNNING,
     DRAINED
@@ -254,4 +255,5 @@ public class ConsumerAppDriver {
       this.offset = offset;
     }
   }
+  */
 }
