@@ -8,11 +8,7 @@ ext {
 }
 
 versions += [
-<<<<<<< HEAD
     kafka: "2.5.0-SNAPSHOT",
-=======
-    kafka: "2.6.0-SPECIAL-SNAPSHOT",
->>>>>>> ff68085a6e4d2beb377b5935c64e48b1ffeacb47
     argparse4j: "0.7.0",
     slf4j: "1.7.25",
     log4j: "1.2.17"
