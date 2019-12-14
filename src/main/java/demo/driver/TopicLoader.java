@@ -17,7 +17,6 @@
 package demo.driver;
 
 import static net.sourceforge.argparse4j.impl.Arguments.store;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -116,7 +115,7 @@ public class TopicLoader {
         if (payloadFilePath != null) {
           payload = payloadByteList.get(random.nextInt(payloadByteList.size()));
         }
-        record = new ProducerRecord<>(topicName, payload);
+        record = new ProducerRecord<>(topicName, payload, payload);
 
         producer.send(record);
       }
