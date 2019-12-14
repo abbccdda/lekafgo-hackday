@@ -39,7 +39,6 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 //import org.apache.kafka.clients.consumer.RecordKeyRange;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.OffsetMetadataTooLarge;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import scala.Int;
 
@@ -87,7 +86,7 @@ public class ConsumerAppDriver {
       enterSingleThreadMode(consumer, pollDuration, recordProcessingTime, inputTopic);
     } else {
       System.out.println("Entering multi thread mode");
-//      enterMultiThreadMode(consumer, pollDuration, recordProcessingTime, numThreads);
+      enterMultiThreadMode(consumer, pollDuration, recordProcessingTime, numThreads);
     }
   }
 
@@ -131,7 +130,7 @@ public class ConsumerAppDriver {
     List<WorkerThread> workers = new ArrayList<>();
     for (RecordKeyRange range : keyRanges) {
       WorkerThread workerThread = new WorkerThread(consumer, range, recordProcessingTime, recordMap);
-      executorService.submit(workerThread);
+      executorService.execute(workerThread);
       workers.add(workerThread);
     }
 
@@ -198,7 +197,7 @@ public class ConsumerAppDriver {
       this.range = range;
       this.recordProcessingTime = recordProcessingTime;
       this.recordMap = recordMap;
-      this.state = WorkerState.RUNNING;
+      this.state = WorkerState.DRAINED;
     }
 
     public boolean drained() {
@@ -239,7 +238,7 @@ public class ConsumerAppDriver {
       for (Map.Entry<TopicPartition, Long> endOffset : endOffsets.entrySet()) {
         offsetAndMetadata.put(endOffset.getKey(), new OffsetAndMetadata(endOffset.getValue(), null, null));
       }
-      System.out.println("do printing");
+      System.out.println("do committing");
 //      consumer.commitSync(offsetAndMetadata);
     }
   }
