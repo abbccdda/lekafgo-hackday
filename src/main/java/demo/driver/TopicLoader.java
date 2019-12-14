@@ -115,7 +115,7 @@ public class TopicLoader {
         if (payloadFilePath != null) {
           payload = payloadByteList.get(random.nextInt(payloadByteList.size()));
         }
-        record = new ProducerRecord<>(topicName, payload);
+        record = new ProducerRecord<>(topicName, payload, payload);
 
         producer.send(record);
       }

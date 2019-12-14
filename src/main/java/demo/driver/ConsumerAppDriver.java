@@ -18,11 +18,13 @@ package demo.driver;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -32,12 +34,14 @@ import java.util.concurrent.Executors;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 //import org.apache.kafka.clients.consumer.RecordKeyRange;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import scala.Int;
 
 public class ConsumerAppDriver {
 
@@ -68,18 +72,19 @@ public class ConsumerAppDriver {
     properties = filterOutTestProperties(properties);
 
     properties.put(ConsumerConfig.GROUP_ID_CONFIG, threadingModel + "-consumer-app");
-    properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+    properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    properties.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, Int.MaxValue());
     properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
     properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 
     final String inputTopic = properties.getProperty("input.topic", inputTopicName);
 
     KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(properties);
+//    consumer.assign(Collections.singletonList(new TopicPartition(inputTopic, 0)));
     consumer.subscribe(Collections.singletonList(inputTopic));
-
     if (threadingModel.equals("single-thread")) {
       System.out.println("Entering single thread mode");
-      enterSingleThreadMode(consumer, pollDuration, recordProcessingTime);
+      enterSingleThreadMode(consumer, pollDuration, recordProcessingTime, inputTopic);
     } else {
       System.out.println("Entering multi thread mode");
       //enterMultiThreadMode(consumer, pollDuration, recordProcessingTime, numThreads);
@@ -88,15 +93,17 @@ public class ConsumerAppDriver {
 
   private static void enterSingleThreadMode(Consumer<byte[], byte[]> consumer,
                                             long pollDuration,
-                                            long recordProcessingTime) {
-
+                                            long recordProcessingTime,
+                                            String inputTopic) {
     while (true) {
       final ConsumerRecords<byte[], byte[]> consumerRecords =
           consumer.poll(Duration.ofMillis(pollDuration));
 
-      consumerRecords.forEach(record -> {
+      long lastOffset = 0;
+      for (ConsumerRecord<byte[], byte[]> record : consumerRecords) {
         try {
           Thread.sleep(recordProcessingTime);
+          lastOffset = Math.max(lastOffset, record.offset());
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
@@ -118,7 +125,7 @@ public class ConsumerAppDriver {
     List<WorkerThread> workers = new ArrayList<>();
     for (RecordKeyRange range : keyRanges) {
       WorkerThread workerThread = new WorkerThread(consumer, range, recordProcessingTime, recordMap);
-      executorService.submit(workerThread);
+      executorService.execute(workerThread);
       workers.add(workerThread);
     }
 
@@ -131,12 +138,13 @@ public class ConsumerAppDriver {
       if (needFetchMoreData) {
         final ConsumerRecords<byte[], byte[]> consumerRecords =
             consumer.poll(Duration.ofMillis(pollDuration));
-        consumerRecords.forEach(record -> {
+
+        for (ConsumerRecord<byte[], byte[]> record : consumerRecords) {
           long hashKey = (long) Arrays.hashCode(record.key());
           List<OffsetData> current = recordMap.getOrDefault(record.key(), new ArrayList<>());
           current.add(new OffsetData(record.topic(), record.partition(), record.offset()));
           recordMap.put(hashKey, current);
-        });
+        }
       }
     }
     executorService.shutdown();
@@ -185,7 +193,7 @@ public class ConsumerAppDriver {
       this.range = range;
       this.recordProcessingTime = recordProcessingTime;
       this.recordMap = recordMap;
-      this.state = WorkerState.RUNNING;
+      this.state = WorkerState.DRAINED;
     }
 
     public boolean drained() {
@@ -224,9 +232,10 @@ public class ConsumerAppDriver {
     synchronized void commit(Map<TopicPartition, Long> endOffsets) {
       Map<TopicPartition, OffsetAndMetadata> offsetAndMetadata = new HashMap<>();
       for (Map.Entry<TopicPartition, Long> endOffset : endOffsets.entrySet()) {
-        offsetAndMetadata.put(endOffset.getKey(), new OffsetAndMetadata(endOffset.getValue(), range, null));
+        offsetAndMetadata.put(endOffset.getKey(), new OffsetAndMetadata(endOffset.getValue(), null, null));
       }
-      consumer.commitSync(offsetAndMetadata);
+      System.out.println("do committing");
+//      consumer.commitSync(offsetAndMetadata);
     }
   }
 
