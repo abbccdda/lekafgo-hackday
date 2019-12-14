@@ -6,9 +6,9 @@ KAFKA_BROKER_ADDR=localhost:9092
 TOPIC_NAME="test-topic"
 PARTITION=3
 INTERVAL=10 # in seconds
-THROUGHPUT_CAP=-1
-NUM_RECORDS=100
-BROKER_CAP=10
+THROUGHPUT_CAP=100 # bytes/second
+NUM_RECORDS=1000
+STEP=10
 
 # Usage: ./perf_increasing_load.sh -t test-topic -i 10 -p 1000
 helpFunction()
@@ -37,9 +37,11 @@ echo "====> Clean up old topic: $TOPIC_NAME"
 echo "====> Verify Deletion:"
 ./kafka/bin/kafka-topics.sh --list --bootstrap-server $KAFKA_BROKER_ADDR
 
-for (( i=1; i<=$BROKER_CAP; i++ ))
+for (( i=1; i<=$STEP; i++ ))
 do
   echo "===>Starting producer $i at $(date)"
-  ./kafka/bin/kafka-producer-perf-test.sh --producer-props bootstrap.servers=localhost:9092 --topic $TOPIC_NAME --throughput $THROUGHPUT_CAP --record-size 1000 --num-records $NUM_RECORDS > /dev/null 2>&1 &
+  ./kafka/bin/kafka-producer-perf-test.sh --producer-props bootstrap.servers=localhost:9092 --topic $TOPIC_NAME --throughput $THROUGHPUT_CAP --record-size 1000 --num-records $NUM_RECORDS >> perf.log
+  THROUGHPUT_CAP=$(($THROUGHPUT_CAP + 100))
+  echo "Increase throughput to $THROUGHPUT_CAP"
   sleep $INTERVAL
 done
