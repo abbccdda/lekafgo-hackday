@@ -9,4 +9,4 @@ cd ${PROJECT_NAME}
 tar zxvf ${PROJECT_NAME}-libs.tar.gz
 cd ../
 java -cp "./${PROJECT_NAME}/${PROJECT_NAME}-libs/*" -Dlog4j.configuration=file:./${PROJECT_NAME}/config/log4j.properties \
-                 demo.driver.ConsumerAppDriver ./${PROJECT_NAME}/config/consumer.properties
+                 demo.driver.ConsumerAppDriver ./${PROJECT_NAME}/config/multi-thread-consumer.properties

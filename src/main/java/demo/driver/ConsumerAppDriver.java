@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -112,7 +113,6 @@ public class ConsumerAppDriver {
 
       if (consumerRecords.count() > 0) {
         OffsetAndMetadata metadata = new OffsetAndMetadata(lastOffset);
-        System.out.println("leader epoch is " + metadata.leaderEpoch());
         consumer.commitSync(Collections.singletonMap(new TopicPartition(inputTopic, 0), metadata));
       }
     }
@@ -143,12 +143,13 @@ public class ConsumerAppDriver {
       if (needFetchMoreData) {
         final ConsumerRecords<byte[], byte[]> consumerRecords =
             consumer.poll(Duration.ofMillis(pollDuration));
-        consumerRecords.forEach(record -> {
+
+        for (ConsumerRecord<byte[], byte[]> record : consumerRecords) {
           long hashKey = (long) Arrays.hashCode(record.key());
           List<OffsetData> current = recordMap.getOrDefault(record.key(), new ArrayList<>());
           current.add(new OffsetData(record.topic(), record.partition(), record.offset()));
           recordMap.put(hashKey, current);
-        });
+        }
       }
     }
     executorService.shutdown();
